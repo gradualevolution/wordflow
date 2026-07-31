@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+    <title>Word Flow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Alegreya:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color:              #f0f0f0;
+            --text-color:            #333333;
+            --text-color-secondary:  #6c757d;
+            --border-color:          rgba(0, 0, 0, 0.1);
+            --card-shadow:           0 2px 8px rgba(0, 0, 0, 0.1);
+            --card-radius:           20px;
+            --button-radius:         14px;
+            --transition-standard:   all 0.2s ease;
+            --primary-color:         #007AFF;
+        }
+
+        [data-theme="dark"] {
+            --bg-color:              #0d0d0d;
+            --text-color:            #ffffff;
+            --text-color-secondary:  #b0b0b0;
+            --border-color:          rgba(255, 255, 255, 0.12);
+            --card-shadow:           0 8px 24px rgba(0, 0, 0, 0.8);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            font-size: 17px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        [data-theme="dark"] body { background: #000000; }
+
+        header {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.92rem 2rem;
+            background: var(--bg-color);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo h1 {
+            font-family: 'Alegreya', serif;
+            font-weight: 400;
+            font-size: 1.45rem;
+            color: var(--text-color);
+            border: 1.5px solid #000000;
+            padding: 0.85rem 1.35rem 0.8rem;
+            display: inline-block;
+            line-height: 1;
+            cursor: default;
+        }
+
+        [data-theme="dark"] .logo h1 {
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .header-right {
+            grid-column: 3;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 75px;
+            height: 42px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            transition: var(--transition-standard);
+            overflow: visible;
+        }
+
+        .toggle-switch:active { transform: scale(0.95); }
+
+        .switch-track {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #e0e0e0;
+            border-radius: 21px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1),
+                        0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .switch-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 33px;
+            height: 33px;
+            background: #ffffff;
+            border-radius: 50%;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateX(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2),
+                        0 1px 2px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 700;
+            color: #555555;
+            user-select: none;
+            line-height: 1;
+        }
+
+        [data-theme="dark"] .toggle-switch .switch-track {
+            background: #2a2a2a;
+            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3),
+                        0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .toggle-switch .switch-thumb {
+            background: #f0f0f0;
+            transform: translateX(33px);
+            color: #333333;
+        }
+
+        .toggle-switch:active .switch-thumb {
+            transform: translateX(0) scale(0.92);
+            transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] .toggle-switch:active .switch-thumb {
+            transform: translateX(33px) scale(0.92);
+        }
+
+        main {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 28px 16px 64px;
+        }
+
+        .section-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-color-secondary);
+            margin-bottom: 10px;
+            padding: 0 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .card {
+            background: var(--bg-color);
+            border-radius: var(--card-radius);
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            margin-bottom: 28px;
+        }
+
+        #editor-container {
+            margin-bottom: 12px;
+        }
+
+        .ql-toolbar.ql-snow {
+            border: none !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            background: var(--bg-color) !important;
+            padding: 10px 14px;
+        }
+
+        .ql-container.ql-snow {
+            border: none !important;
+            background: var(--bg-color);
+        }
+
+        #editor {
+            height: 160px;
+            font-size: 15px;
+            color: var(--text-color);
+            background: var(--bg-color);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .ql-editor.ql-blank::before {
+            color: var(--text-color-secondary) !important;
+            font-style: normal !important;
+        }
+
+        [data-theme="dark"] .ql-toolbar.ql-snow { background: var(--bg-color) !important; }
+        [data-theme="dark"] .ql-snow .ql-stroke { stroke: var(--text-color) !important; }
+        [data-theme="dark"] .ql-snow .ql-fill,
+        [data-theme="dark"] .ql-snow .ql-stroke.ql-fill { fill: var(--text-color) !important; }
+        [data-theme="dark"] .ql-snow .ql-picker { color: var(--text-color) !important; }
+        [data-theme="dark"] .ql-snow .ql-picker-options {
+            background-color: #1c1c1e !important;
+            border-color: var(--border-color) !important;
+        }
+        [data-theme="dark"] .ql-snow .ql-picker-label { color: var(--text-color) !important; }
+        [data-theme="dark"] .ql-snow .ql-editor { color: var(--text-color); }
+        [data-theme="dark"] .ql-toolbar button:hover .ql-stroke,
+        [data-theme="dark"] .ql-toolbar button.ql-active .ql-stroke { stroke: #ffffff !important; }
+
+        .actions-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: var(--button-radius);
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: var(--transition-standard);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            flex-shrink: 0;
+        }
+
+        .btn:hover { opacity: 0.8; }
+
+        .btn:active {
+            transform: scale(0.88);
+            transition: transform 0.07s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .btn-active {
+            background: var(--primary-color);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .btn-block {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            gap: 12px;
+        }
+
+        .settings-row + .settings-row {
+            border-top: 0.5px solid var(--border-color);
+        }
+
+        .settings-label {
+            font-size: 14.5px;
+            font-weight: 500;
+            color: var(--text-color);
+        }
+
+        .segmented {
+            display: flex;
+            gap: 6px;
+        }
+
+        .segmented .btn {
+            padding: 7px 14px;
+            font-size: 13px;
+        }
+
+        .speed-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .speed-row .settings-label-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .speed-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--border-color);
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+        }
+
+        .flow-card {
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 22px;
+        }
+
+        .flow-word {
+            font-size: clamp(2.2rem, 8vw, 3.6rem);
+            font-weight: 700;
+            text-align: center;
+            min-height: 1.3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            word-break: break-word;
+        }
+
+        .flow-progress-track {
+            width: 100%;
+            max-width: 420px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--border-color);
+            overflow: hidden;
+        }
+
+        .flow-progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            width: 0%;
+            transition: width 0.15s linear;
+        }
+
+        .flow-counter {
+            font-size: 13px;
+            color: var(--text-color-secondary);
+            font-weight: 600;
+        }
+
+        .flow-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 46px;
+            height: 46px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: var(--transition-standard);
+        }
+
+        .icon-btn svg {
+            width: 18px;
+            height: 18px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+        }
+
+        .icon-btn:hover { opacity: 0.8; }
+
+        .icon-btn:active {
+            transform: scale(0.88);
+            transition: transform 0.07s ease;
+        }
+
+        .icon-btn-primary {
+            width: 58px;
+            height: 58px;
+            background: var(--primary-color);
+            color: #ffffff;
+            border-color: transparent;
+        }
+
+        .icon-btn-primary svg { width: 22px; height: 22px; }
+
+        .hidden { display: none !important; }
+
+        footer {
+            text-align: center;
+            padding: 1.6rem 1rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-color-secondary);
+            font-size: 0.875rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                padding: max(1rem, env(safe-area-inset-top)) 1rem 1rem;
+                grid-template-columns: 1fr auto;
+            }
+
+            .header-right { grid-column: 2; }
+
+            .logo h1 {
+                font-size: 1.3rem;
+                padding: 0.65rem 1.05rem 0.6rem;
+            }
+
+            main {
+                padding: 20px 12px 56px;
+            }
+
+            .toggle-switch { width: 67px; height: 39px; }
+
+            .switch-thumb { width: 31px; height: 31px; }
+
+            [data-theme="dark"] .toggle-switch .switch-thumb {
+                transform: translateX(30px);
+            }
+
+            [data-theme="dark"] .toggle-switch:active .switch-thumb {
+                transform: translateX(30px) scale(0.92);
+            }
+
+            .settings-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .segmented { width: 100%; }
+            .segmented .btn { flex: 1; justify-content: center; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <h1>Word Flow</h1>
+        </div>
+
+        <div></div>
+
+        <div class="header-right">
+            <button
+                class="toggle-switch"
+                onclick="toggleTheme()"
+                aria-label="Switch to dark mode"
+                aria-pressed="false"
+            >
+                <div class="switch-track">
+                    <div class="switch-thumb" id="switch-thumb-label">L</div>
+                </div>
+            </button>
+        </div>
+    </header>
+
+    <main>
+
+        <p class="section-label" style="margin-top: 4px;">Input</p>
+        <div id="editor-container" class="card">
+            <div id="editor"></div>
+        </div>
+
+        <p class="section-label">Settings</p>
+        <div class="card">
+            <div class="settings-row">
+                <span class="settings-label">Order</span>
+                <div class="segmented">
+                    <button class="btn btn-active" id="orderSequentialBtn" onclick="setOrder('sequential')">Sequential</button>
+                    <button class="btn" id="orderShuffleBtn" onclick="setOrder('shuffle')">Shuffle</button>
+                </div>
+            </div>
+            <div class="settings-row speed-row">
+                <div class="settings-label-line">
+                    <span class="settings-label">Speed</span>
+                    <span class="speed-value" id="speedValue">300 WPM</span>
+                </div>
+                <input type="range" id="speedSlider" min="60" max="900" step="10" value="300" oninput="setSpeed(this.value)">
+            </div>
+        </div>
+
+        <div class="actions-row">
+            <button class="btn btn-primary btn-block" id="startButton">
+                <svg viewBox="0 0 24 24">
+                    <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+                Start Word Flow
+            </button>
+        </div>
+
+        <div id="flowSection"></div>
+
+    </main>
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const newDark = !isDark;
+            newDark
+                ? document.documentElement.setAttribute('data-theme', 'dark')
+                : document.documentElement.removeAttribute('data-theme');
+            localStorage.setItem('theme-preference', newDark ? 'dark' : 'light');
+            applyThumbLabel(newDark);
+        }
+
+        function applyThumbLabel(isDark) {
+            const thumb = document.getElementById('switch-thumb-label');
+            if (thumb) thumb.textContent = isDark ? 'D' : 'L';
+            const btn = document.querySelector('.toggle-switch');
+            if (btn) {
+                btn.setAttribute('aria-pressed', String(isDark));
+                btn.setAttribute('aria-label', isDark ? 'Switch to light mode' : 'Switch to dark mode');
+            }
+        }
+
+        function loadTheme() {
+            const saved = localStorage.getItem('theme-preference') || 'light';
+            if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            applyThumbLabel(saved === 'dark');
+        }
+
+        const quill = new Quill('#editor', {
+            theme: 'snow',
+            placeholder: 'Paste any text here…',
+        });
+
+        let order = 'sequential';
+        let wpm = 300;
+        let words = [];
+        let playOrder = [];
+        let cursor = 0;
+        let timerId = null;
+        let isPlaying = false;
+
+        function shuffleArray(arr) {
+            const a = arr.slice();
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+
+        function msPerWord() {
+            return 60000 / wpm;
+        }
+
+        function setOrder(newOrder) {
+            order = newOrder;
+            document.getElementById('orderSequentialBtn').classList.toggle('btn-active', order === 'sequential');
+            document.getElementById('orderShuffleBtn').classList.toggle('btn-active', order === 'shuffle');
+            if (words.length) buildPlayOrder(true);
+        }
+
+        function setSpeed(value) {
+            wpm = parseInt(value, 10);
+            document.getElementById('speedValue').textContent = `${wpm} WPM`;
+            if (isPlaying) {
+                clearInterval(timerId);
+                timerId = setInterval(advanceWord, msPerWord());
+            }
+        }
+
+        function buildPlayOrder(keepPosition) {
+            const baseIndices = words.map((_, i) => i);
+            playOrder = order === 'shuffle' ? shuffleArray(baseIndices) : baseIndices;
+            if (!keepPosition) cursor = 0;
+        }
+
+        function startFlow() {
+            const text = quill.getText().trim();
+            words = text.length ? text.split(/\s+/) : [];
+
+            if (words.length === 0) return;
+
+            buildPlayOrder(false);
+            renderFlowUI();
+            document.getElementById('editor-container').classList.add('hidden');
+            document.querySelector('.section-label').classList.add('hidden');
+            playFlow();
+        }
+
+        function renderFlowUI() {
+            const section = document.getElementById('flowSection');
+            section.innerHTML = `
+                <p class="section-label">Flow</p>
+                <div class="card flow-card">
+                    <div class="flow-word" id="flowWord"></div>
+                    <div class="flow-progress-track">
+                        <div class="flow-progress-fill" id="flowProgressFill"></div>
+                    </div>
+                    <div class="flow-counter" id="flowCounter"></div>
+                    <div class="flow-controls">
+                        <button class="icon-btn" onclick="stepWord(-1)" aria-label="Previous word">
+                            <svg viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+                        </button>
+                        <button class="icon-btn icon-btn-primary" id="playPauseBtn" onclick="togglePlayPause()" aria-label="Pause">
+                            <svg viewBox="0 0 24 24" id="playPauseIcon"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        </button>
+                        <button class="icon-btn" onclick="stepWord(1)" aria-label="Next word">
+                            <svg viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+                        </button>
+                    </div>
+                    <button class="btn" onclick="stopFlow()">
+                        <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+                        Stop
+                    </button>
+                </div>
+            `;
+        }
+
+        function showCurrentWord() {
+            const wordEl = document.getElementById('flowWord');
+            const fillEl = document.getElementById('flowProgressFill');
+            const counterEl = document.getElementById('flowCounter');
+            if (!wordEl) return;
+
+            const idx = playOrder[cursor];
+            wordEl.textContent = words[idx] || '';
+            const pct = playOrder.length ? ((cursor + 1) / playOrder.length) * 100 : 0;
+            fillEl.style.width = `${pct}%`;
+            counterEl.textContent = `${cursor + 1} / ${playOrder.length}`;
+        }
+
+        function advanceWord() {
+            if (cursor >= playOrder.length - 1) {
+                pauseFlow();
+                return;
+            }
+            cursor++;
+            showCurrentWord();
+        }
+
+        function playFlow() {
+            isPlaying = true;
+            showCurrentWord();
+            setPlayIcon(true);
+            clearInterval(timerId);
+            timerId = setInterval(advanceWord, msPerWord());
+        }
+
+        function pauseFlow() {
+            isPlaying = false;
+            clearInterval(timerId);
+            setPlayIcon(false);
+        }
+
+        function togglePlayPause() {
+            if (isPlaying) {
+                pauseFlow();
+            } else {
+                if (cursor >= playOrder.length - 1) cursor = 0;
+                playFlow();
+            }
+        }
+
+        function setPlayIcon(playing) {
+            const icon = document.getElementById('playPauseIcon');
+            const btn = document.getElementById('playPauseBtn');
+            if (!icon) return;
+            icon.innerHTML = playing
+                ? '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
+                : '<polygon points="5 3 19 12 5 21 5 3"/>';
+            btn.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+        }
+
+        function stepWord(delta) {
+            pauseFlow();
+            cursor = Math.min(Math.max(cursor + delta, 0), playOrder.length - 1);
+            showCurrentWord();
+        }
+
+        function stopFlow() {
+            pauseFlow();
+            document.getElementById('flowSection').innerHTML = '';
+            document.getElementById('editor-container').classList.remove('hidden');
+            document.querySelector('.section-label').classList.remove('hidden');
+        }
+
+        document.getElementById('startButton').addEventListener('click', startFlow);
+        loadTheme();
+    </script>
+</body>
+</html>
